@@ -3,16 +3,21 @@ using System.IO;
 
 namespace ReadMedia.Media
 {
-    public enum NaturalFileSize
+    interface IVisualProp
+    {
+        int Height { get; }
+        int Width { get; }
+    }
+    enum NaturalFileSize
     {
         B = 0,
         KB = 1,
         MB = 2,
         GB = 3
     }
-    public abstract class MyFileInfo
+    public abstract class MyFileInfo : IVisualProp
     {
-        protected FileInfo fileInfo;
+        protected readonly FileInfo fileInfo;
         protected MyFileInfo(string path) => fileInfo = new FileInfo(path);
         public string FullName => fileInfo.FullName;
         DirectoryInfo Directory => fileInfo.Directory;
@@ -42,9 +47,19 @@ namespace ReadMedia.Media
         public DateTime CreationUTC => fileInfo.CreationTimeUtc;
         public DateTime LastWriteUTC => fileInfo.LastWriteTimeUtc;
         public DateTime LastAccessUTC => fileInfo.LastAccessTimeUtc;
+        public virtual int Height => throw new NotImplementedException();
+        public virtual int Width => throw new NotImplementedException();
         public FileInfo CopyTo(string destFileName) => fileInfo.CopyTo(destFileName);
         public FileInfo CopyTo(string destFileName, bool overwrite) => fileInfo.CopyTo(destFileName,overwrite);
         public void MoveTo(string destFileName) => fileInfo.MoveTo(destFileName);
+        protected static string CSVHeader()
+        {
+            return "Name,OnlyName,Extension,FileSize,NaturalSize,Creation,LastWrite,LastAccess,CreationUTC,LastWriteUTC,LastAccessUTC,Height,Width";
+        }
+        public virtual string CSVregister()
+        {
+            return $"{Name},{OnlyName},{Extension},{FileSize},{NaturalSize},{Creation},{LastWrite},{LastAccess},{CreationUTC},{LastWriteUTC},{LastAccessUTC},{Height},{Width}";
+        }
         public virtual string ConsoleDisplay(){
             return $"{Name}\n\t{NaturalSize}\n\tCreación: {Creation} (UTC:{CreationUTC})\n\tModificado: {LastWrite} (UTC:{LastWriteUTC})\n\tAcceso: {LastAccess} (UTC:{LastAccessUTC})";
         }

@@ -45,6 +45,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Media\FileManager.cs" />
     <Compile Include="Media\MyFileInfo.cs" />
     <Compile Include="Media\Photo.cs" />
     <Compile Include="Media\Video.cs" />

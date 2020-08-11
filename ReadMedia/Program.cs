@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
+using System.Threading;
 using ReadMedia.Media;
 
 namespace ReadMedia
@@ -14,63 +14,8 @@ namespace ReadMedia
     }
     class Program
     {
-        static void Main(string[] args)
+        private static MediaTipo Tipo(string extension)
         {
-            string path = string.Empty;
-            while(!Directory.Exists(path)){
-                Console.WriteLine("Inserte Folder");
-                path = Console.ReadLine();
-            }
-            if(path.Last() != '\\') path = path + '\\';
-            FileInfo[] fileInfos = new DirectoryInfo(path).GetFiles().OrderByDescending(f => f.Name).ToArray();
-            List<Video> videos = new List<Video>();
-            List<Photo> photos = new List<Photo>();
-            foreach (var item in fileInfos)
-            {
-                switch(Tipo(item.Extension)){
-                    case MediaTipo.Imagen:
-                        photos.Add(new Photo(item.FullName));
-                        break;
-                    case MediaTipo.Video:
-                        videos.Add(new Video(item.FullName));
-                        break;
-                    default:
-                        throw new Exception("No Media Admited");
-                }
-            }
-            List<MyFileInfo> files = new List<MyFileInfo>();
-            files.AddRange(videos); files.AddRange(photos);
-            Console.WriteLine(DateTime.Now + " - Iniciar Ordenamiento");
-            files.Sort(MyFileInfo.SortVoid);
-            Console.WriteLine(DateTime.Now + " - Ordenamiento Terminando");
-            System.Text.StringBuilder builder = new System.Text.StringBuilder();
-            DateTime init = DateTime.Now;
-            DateTime start = DateTime.Now;
-            int count = 0;
-            foreach (var item in files)
-            {
-                count++;
-                builder = builder.Append(count + "\t" + item.ConsoleDisplay() + "\n");
-                TimeSpan span = DateTime.Now - start;
-                if(span.TotalMilliseconds > 995)
-                {
-                    Console.Write(builder.ToString());
-                    builder = builder.Clear();
-                    start = DateTime.Now;
-                    GC.Collect();
-                }
-            }
-            if(builder.Length > 0)
-            {
-                Console.Write(builder.ToString());
-                builder = builder.Clear();
-                GC.Collect();
-            }
-            Console.WriteLine("Ejecución terminada: " + DateTime.Now);
-            Console.WriteLine("Duración: " + (DateTime.Now - init).TotalSeconds);
-            Console.ReadLine();
-        }
-        private static MediaTipo Tipo(string extension){
             extension = extension.ToLower();
             switch (extension)
             {
@@ -85,6 +30,83 @@ namespace ReadMedia
                 default:
                     return MediaTipo.Otro;
             }
+        }
+        private static void Files(IEnumerable<MyFileInfo> files, string header, string path, ref int count)
+        {
+            FileManager.Write(path, "id," + header + "\n", true);
+            int a = 0;
+            foreach (var item in files)
+            {
+                a++;
+                FileManager.Write(path, $"{a},{item.CSVregister()}\n", false);
+                count++;
+            }
+            Console.WriteLine(path + " Done");
+        } 
+        static void Main(string[] args)
+        {
+            string path = string.Empty;
+            while(!FileManager.FolderExists(path)){
+                Console.WriteLine("Insert Folder");
+                path = Console.ReadLine();
+            }
+            if(path.Last() != '\\') path = path + '\\';
+            Console.WriteLine(DateTime.Now + "\tReading " + path);
+            var videos = new List<Video>(); var photos = new List<Photo>();
+            int count = 0;
+            DateTime start = DateTime.Now;
+            TimeSpan span;
+            FFFProbeProvider provider = new FFFProbeProvider();
+            foreach (var item in FileManager.GetFiles(path))
+            {
+                switch(Tipo(FileManager.Extention(item))){
+                    case MediaTipo.Imagen:
+                        photos.Add(new Photo(item));
+                        break;
+                    case MediaTipo.Video:
+                        videos.Add(new Video(item,provider.Val));
+                        break;
+                    default:
+                        throw new Exception("No Media Admited");
+                }
+                count++;
+                span = DateTime.Now - start;
+                if (span.TotalMilliseconds > 9940)
+                {
+                    start = DateTime.Now;
+                    Console.WriteLine($"{start}\t{count} Files Loaded");
+                }
+            }
+            Console.WriteLine($"{DateTime.Now}\t{count} Files Loaded. Reading Finished");
+            Console.WriteLine($"{DateTime.Now}\tStart Sorting");
+            videos.Sort(MyFileInfo.SortVoid); photos.Sort(MyFileInfo.SortVoid);
+            Console.WriteLine($"{DateTime.Now}\tSorting Finished");
+            string respath = string.Empty;
+            while (!FileManager.FolderExists(respath))
+            {
+                Console.WriteLine("Insert Output Folder");
+                respath = Console.ReadLine();
+            }
+            if (respath.Last() != '\\') respath = respath + '\\';
+            int pc = 0; int vc = 0; DateTime init = DateTime.Now;
+            Thread threadV = new Thread(() => Files(videos, Video.CSVHeader(), respath + "VideosInfo.csv", ref pc));
+            Thread threadF = new Thread(() => Files(photos, Photo.CSVHeader(), respath + "PhotosInfo.csv", ref vc));
+            Console.WriteLine("Start Writing: " + init);
+            threadF.Start(); threadV.Start();
+            start = DateTime.Now;
+            int done = pc + vc;
+            while(done < count)
+            {
+                span = DateTime.Now - start;
+                done = pc + vc;
+                if (span.TotalMilliseconds > 930)
+                {
+                    start = DateTime.Now;
+                    Console.WriteLine($"{start}\t{done}/{count}");
+                }
+            }
+            Console.WriteLine("Writing Finished: " + DateTime.Now);
+            Console.ReadLine();
         }
     }
 }
