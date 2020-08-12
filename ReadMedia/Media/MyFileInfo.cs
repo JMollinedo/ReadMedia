@@ -61,7 +61,7 @@ namespace ReadMedia.Media
             return $"{Name},{OnlyName},{Extension},{FileSize},{NaturalSize},{Creation},{LastWrite},{LastAccess},{CreationUTC},{LastWriteUTC},{LastAccessUTC},{Height},{Width}";
         }
         public virtual string ConsoleDisplay(){
-            return $"{Name}\n\t{NaturalSize}\n\tCreación: {Creation} (UTC:{CreationUTC})\n\tModificado: {LastWrite} (UTC:{LastWriteUTC})\n\tAcceso: {LastAccess} (UTC:{LastAccessUTC})";
+            return $"{Name}\n\t{Width}x{Height}\n\t{NaturalSize}\n\tCreation: {Creation} (UTC:{CreationUTC})\n\tLast Write: {LastWrite} (UTC:{LastWriteUTC})\n\tLast Access: {LastAccess} (UTC:{LastAccessUTC})";
         }
         public static int SortVoid(MyFileInfo a, MyFileInfo b)
         {

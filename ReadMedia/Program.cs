@@ -6,6 +6,22 @@ using ReadMedia.Media;
 
 namespace ReadMedia
 {
+    class LogPrinter
+    {
+        private System.Timers.Timer timer;
+        public string Message;
+        public LogPrinter(int milliseconds)
+        {
+            Message = string.Empty;
+            timer = new System.Timers.Timer(milliseconds);
+            timer.Elapsed += OnTick;
+            timer.AutoReset = true;
+        }
+        public void SetTime(int milliseconds) => timer.Interval = milliseconds;
+        public void StartTimer() => timer.Start();
+        public void StopTimer() => timer.Stop();
+        private void OnTick(object o, System.Timers.ElapsedEventArgs e) => Console.WriteLine($"{e.SignalTime}\t{Message}");
+    }
     enum MediaTipo
     {
         Imagen,
@@ -51,32 +67,30 @@ namespace ReadMedia
                 path = Console.ReadLine();
             }
             if(path.Last() != '\\') path = path + '\\';
-            Console.WriteLine(DateTime.Now + "\tReading " + path);
+            Console.WriteLine($"{DateTime.Now}\tReading {path}");
             var videos = new List<Video>(); var photos = new List<Photo>();
             int count = 0;
-            DateTime start = DateTime.Now;
-            TimeSpan span;
+            LogPrinter printer = new LogPrinter(10000);
             FFFProbeProvider provider = new FFFProbeProvider();
+            printer.StartTimer();
             foreach (var item in FileManager.GetFiles(path))
             {
-                switch(Tipo(FileManager.Extention(item))){
+                switch (Tipo(FileManager.Extention(item)))
+                {
                     case MediaTipo.Imagen:
                         photos.Add(new Photo(item));
                         break;
                     case MediaTipo.Video:
-                        videos.Add(new Video(item,provider.Val));
+                        videos.Add(new Video(item, provider.Val));
                         break;
                     default:
-                        throw new Exception("No Media Admited");
+                        throw new Exception("Media No Admited");
                 }
                 count++;
-                span = DateTime.Now - start;
-                if (span.TotalMilliseconds > 9940)
-                {
-                    start = DateTime.Now;
-                    Console.WriteLine($"{start}\t{count} Files Loaded");
-                }
+                printer.Message = $"{count} Files Loaded";
             }
+            printer.StopTimer();
+            provider = null;
             Console.WriteLine($"{DateTime.Now}\t{count} Files Loaded. Reading Finished");
             Console.WriteLine($"{DateTime.Now}\tStart Sorting");
             videos.Sort(MyFileInfo.SortVoid); photos.Sort(MyFileInfo.SortVoid);
@@ -88,23 +102,24 @@ namespace ReadMedia
                 respath = Console.ReadLine();
             }
             if (respath.Last() != '\\') respath = respath + '\\';
-            int pc = 0; int vc = 0; DateTime init = DateTime.Now;
+            int pc = 0, vc = 0;
             Thread threadV = new Thread(() => Files(videos, Video.CSVHeader(), respath + "VideosInfo.csv", ref pc));
             Thread threadF = new Thread(() => Files(photos, Photo.CSVHeader(), respath + "PhotosInfo.csv", ref vc));
-            Console.WriteLine("Start Writing: " + init);
+            Console.WriteLine("Start Writing: " + DateTime.Now);
             threadF.Start(); threadV.Start();
-            start = DateTime.Now;
+            printer.SetTime(1000);
+            printer.StartTimer();
             int done = pc + vc;
-            while(done < count)
+            while (done < count)
             {
-                span = DateTime.Now - start;
                 done = pc + vc;
-                if (span.TotalMilliseconds > 930)
-                {
-                    start = DateTime.Now;
-                    Console.WriteLine($"{start}\t{done}/{count}");
-                }
+                printer.Message = $"{done}/{count}";
             }
+            while (threadV.IsAlive || threadF.IsAlive)
+            {
+                printer.Message = $"{done}/{count}";
+            }
+            printer.StopTimer();
             Console.WriteLine("Writing Finished: " + DateTime.Now);
             Console.ReadLine();
         }

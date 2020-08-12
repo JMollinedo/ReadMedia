@@ -47,7 +47,7 @@ namespace ReadMedia.Media
         public string AudioCodecFullName { private set; get; }
         public string AudioCodecName { private set; get; }
         public override string ConsoleDisplay(){
-            return base.ConsoleDisplay() + $"\n\t{Width}x{Height}\n\t{Duration}\n\tVideo Codec: {VideoCodecName} ({VideoCodecFullName})" +
+            return base.ConsoleDisplay() + $"\n\t{Duration}\n\tVideo Codec: {VideoCodecName} ({VideoCodecFullName})" +
                 $"\n\tAudio Codec: {AudioCodecName} ({AudioCodecFullName})\n\tFrameRate: {FrameRate}\n\tPixel Format: {PixelFormat}";
         }
         public new static string CSVHeader()

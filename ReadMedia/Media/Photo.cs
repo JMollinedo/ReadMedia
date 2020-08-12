@@ -20,7 +20,7 @@ namespace ReadMedia.Media
         public override int Width => width;
         public override int Height => height;
         public override string ConsoleDisplay(){
-            return base.ConsoleDisplay() + $"\n\t{Width}x{Height}";
+            return base.ConsoleDisplay();
         }
         public new static string CSVHeader()
         {
